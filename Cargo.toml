@@ -1,0 +1,12 @@
+[package]
+name = "arse"
+version = "0.1.0"
+authors = ["Fredrik Brännbacka <fredrik.brannbacka@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+flate2 = "1"
+nom = "6"
+
+[dev-dependencies]
+indoc = "1.0"
