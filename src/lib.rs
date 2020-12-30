@@ -29,6 +29,13 @@ impl<R: Read> ArseParser<R> {
         }
     }
 
+    pub fn with_capacity(reader: R, capacity: usize) -> Self {
+        Self {
+            reader: BufReader::with_capacity(4 * 1024 * 1024, reader),
+            buffer: String::new(),
+        }
+    }
+
     fn fill(&mut self) -> Result<usize, Utf8Error> {
         let buffer = self.reader.fill_buf().unwrap();
         let nb = buffer.len();
@@ -55,10 +62,10 @@ impl<R: Read> Iterator for ArseParser<R> {
                     self.buffer = rest.to_string();
                     return Some(node);
                 }
-                Ok((rest, RootElement::Comment(comment))) => {
+                Ok((rest, RootElement::Comment(_))) => {
                     self.buffer = rest.to_string();
                 }
-                Err(Err::Incomplete(s)) => {
+                Err(Err::Incomplete(_)) => {
                     if read == 0 {
                         break;
                     }
@@ -135,7 +142,7 @@ fn root<'a>(i: &'a str) -> IResult<&'a str, RootElement<'a>> {
 
 /// Get a buffered reader for filename.
 /// Supports both text and gz files.
-pub fn reader(filename: &str) -> Box<dyn BufRead> {
+pub fn reader(filename: &str) -> Box<dyn Read> {
     let path = Path::new(filename);
     let file = match File::open(&path) {
         Err(why) => panic!("couldn't open {}, {}", path.display(), why),
@@ -146,12 +153,9 @@ pub fn reader(filename: &str) -> Box<dyn BufRead> {
     // determine if it is a gz file.
     // TODO: Use other heuristics to determine file type
     if path.extension() == Some(OsStr::new("gz")) {
-        Box::new(BufReader::with_capacity(
-            4 * 1024,
-            flate2::read::GzDecoder::new(file),
-        ))
+        Box::new(flate2::read::GzDecoder::new(file))
     } else {
-        Box::new(BufReader::with_capacity(4 * 1024, file))
+        Box::new(file)
     }
 }
 
